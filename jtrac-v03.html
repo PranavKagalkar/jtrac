@@ -1,1 +1,562 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>J-TRAC | Judicial Roster Explorer</title>
+    <style>
+    :root {
+        font-family: system-ui, -apple-system, Arial, sans-serif;
+        color: #162743;
+        background:#f2f5fa
+    }
+
+    * {
+        box-sizing:border-box
+    }
+
+    body {
+        margin:0
+    }
+
+    header {
+        background: #102747;
+        color: #fff;
+        padding:23px max(22px, calc((100% - 1180px)/2))
+    }
+
+    header h1 {
+        margin: 0;
+        font-size:29px
+    }
+
+    header p {
+        margin: 7px 0 0;
+        color:#c6d4e8
+    }
+
+    main {
+        max-width: 1180px;
+        margin: 26px auto;
+        padding:0 18px
+    }
+
+    .card {
+        background: #fff;
+        border: 1px solid #d9e2ee;
+        border-radius: 13px;
+        padding: 22px;
+        margin-bottom: 18px;
+        box-shadow:0 3px 13px #10274708
+    }
+
+    .alert {
+        background: #fff8e9;
+        border-left: 4px solid #cf8c2b;
+        padding: 14px;
+        border-radius:7px
+    }
+
+    h2 {
+        font-size: 20px;
+        margin:0 0 14px
+    }
+
+    h3 {
+        font-size: 16px;
+        margin:0 0 8px
+    }
+
+    p {
+        line-height:1.55
+    }
+
+    .muted, small {
+        color:#617087
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap:18px
+    }
+
+    textarea, input, select {
+        font: inherit;
+        width: 100%;
+        padding: 11px;
+        border: 1px solid #cbd5e1;
+        border-radius:8px
+    }
+
+    textarea {
+        min-height:180px
+    }
+
+    button {
+        border: 0;
+        background: #174d87;
+        color: white;
+        border-radius: 8px;
+        padding: 11px 16px;
+        font-weight: 650;
+        cursor: pointer;
+        margin:5px 6px 5px 0
+    }
+
+    button.alt {
+        background:#60738e
+    }
+
+    button:hover {
+        filter:brightness(.9)
+    }
+
+    .tag {
+        display: inline-block;
+        background: #eaf1f9;
+        color: #264466;
+        padding: 6px 9px;
+        border-radius: 6px;
+        margin: 4px;
+        font-size:13px
+    }
+
+    .result {
+        border: 1px solid #dce5ef;
+        border-radius: 9px;
+        padding: 15px;
+        margin:10px 0
+    }
+
+    .warning {
+        background: #fff8e9;
+        border-left: 4px solid #d99a35;
+        padding: 12px;
+        margin:10px 0
+    }
+
+    .judge {
+        border: 1px solid #d9e2ee;
+        border-radius: 9px;
+        margin: 12px 0;
+        overflow:hidden
+    }
+
+    .judge summary {
+        cursor: pointer;
+        padding: 14px;
+        background: #f5f8fc;
+        font-weight:700
+    }
+
+    .judge .body {
+        padding:12px 16px
+    }
+
+    .page {
+        padding: 11px 0;
+        border-bottom:1px solid #e6ebf2
+    }
+
+    .page pre {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+        color:#30425d
+    }
+
+    .controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap:12px
+    }
+
+    .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap:wrap
+    }
+
+    a {
+        color:#145ba0
+    }
+
+    footer {
+        text-align: center;
+        color: #60738e;
+        padding:20px
+    }
+
+    @media (max-width: 750px) {
+        .grid, .controls {
+            grid-template-columns:1fr
+        }
+
+        header {
+            padding: 20px
+        }
+    }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>⚖ J-TRAC</h1>
+        <p>Judicial Triage, Roster and Associated Cases · Research Prototype v0.3</p>
+    </header>
+    <main>
+        <div class="card alert">
+            <strong>Educational research prototype — not an official Supreme Court service.</strong>
+             Roster data below is transcribed from the document effective 
+            <strong>26 October 2026</strong>
+            , not verified as current. A category match is not a bench assignment. Do not upload confidential petitions.
+        </div>
+        <div class="card">
+            <h2>1. Supreme Court Roster Explorer</h2>
+            <p class="muted">Search the 30-page roster by judge, subject, or category code. Entries preserve the PDF's wording and exclusions. Select a judge to inspect all of their listed entries.</p>
+            <div class="controls">
+                <div>
+                    <label for="rosterSearch">Search subject or code</label>
+                    <input id="rosterSearch" placeholder="e.g. demolition, 2301, habeas, bail">
+                </div>
+                <div>
+                    <label for="judgeSelect">Judge</label>
+                    <select id="judgeSelect">
+                        <option value="">All judges</option>
+                    </select>
+                </div>
+            </div>
+            <p id="rosterCount" class="muted"></p>
+            <div id="rosterResults"></div>
+            <details>
+                <summary>Special bench and regular-hearing notes (page 30)</summary>
+                <div id="specialNotes"></div>
+            </details>
+        </div>
+        <div class="grid">
+            <section class="card">
+                <h2>2. Petition input</h2>
+                <p class="muted">Upload a text-based PDF (max 10 MB / 100 pages) or paste a synthetic/public petition excerpt.</p>
+                <label for="pdfUpload">PDF petition</label>
+                <input id="pdfUpload" type="file" accept=".pdf,application/pdf">
+                <p id="uploadStatus" class="muted">No PDF selected.</p>
+                <label for="petition">Petition text</label>
+                <textarea id="petition" placeholder="Paste facts, prayer for interim relief, procedural history..."></textarea>
+                <div>
+                    <button id="analyseBtn">Analyse petition</button>
+                    <button class="alt" id="sampleBtn">Load synthetic example</button>
+                </div>
+            </section>
+            <section class="card">
+                <h2>3. Preliminary assessment</h2>
+                <div id="assessment" class="muted">No analysis yet.</div>
+            </section>
+        </div>
+        <section class="card">
+            <h2>4. Potentially related matters</h2>
+            <p class="muted">Simple lexical comparison against three synthetic examples. Scores are not probabilities of legal connectedness.</p>
+            <div id="matches">Run an analysis to see possible overlaps.</div>
+        </section>
+        <section class="card">
+            <h2>5. Human review checklist</h2>
+            <p>
+                <label>
+                    <input type="checkbox" style="width:auto">
+                     Registry defects and filing status independently verified
+                </label>
+            </p>
+            <p>
+                <label>
+                    <input type="checkbox" style="width:auto">
+                     Interim prayer and relevant listing circular reviewed
+                </label>
+            </p>
+            <p>
+                <label>
+                    <input type="checkbox" style="width:auto">
+                     Any related matters and judicial tagging orders independently checked
+                </label>
+            </p>
+            <p>
+                <label>
+                    <input type="checkbox" style="width:auto">
+                     Current roster and exceptions verified against official court materials
+                </label>
+            </p>
+            <p class="muted">These checkboxes do not record or issue official judicial or administrative approval.</p>
+        </section>
+    </main>
+    <footer>J-TRAC · Educational research prototype · No judicial affiliation</footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+    const ROSTER = [{
+        "page": 2,
+        "judge": "HON’BLE THE CHIEF JUSTICE OF INDIA",
+        "text": "                      HON’BLE THE CHIEF JUSTICE OF INDIA\n201 - 202               APPOINTMENT OF CONSTITUTIONAL FUNCTIONARIES\n301 - 306               ARBITRATION LAW AND OTHER ALTERNATIVE DISPUTE\n                        RESOLUTION\n401 - 402               ARMED FORCES AND PARAMILITARY FORCES\n501                     AVIATION LAWS / AIRPORTS\n601 - 603               BANKING\n701 - 703               BAR COUNCIL, BAR ASSOCIATIONS,\n                        ADVOCATES, OTHER PROFESSIONAL BODIES\n801                     BENAMI TRANSACTION ACT\n901 - 905               CIVIL LAW\n1401 - 1402             CONTEMPT OF COURT\n1501 - 1512             CRIMINAL LAW INCLUDING ACID ATTACK VICTIM(S)\n                        CASES\n1501D - 1511D           CAPITAL PUNISHMENT(D – CASES WHERE DEATH\n                        SENTENCE IS IMPOSED)\n1601 - 1606             DIRECT TAXATION\n1701 - 1707             EDUCATIONAL INSTITUTIONS – ADMISSION,\n                        MANAGEMENT, GRANT, RECOGNITION\n1801 - 1806             ELECTION AND DELIMITATION LAWS\n1901 - 1902             ENERGY LAWS-ELECTRICITY, PETROLEUM, OIL AND\n                        NATURAL GAS\n2001 - 2002             ENVIRONMENTAL LAWS\n2201 - 2202             HABEAS CORPUS AND PREVENTIVE DETENTION\n2301 - 2302             HOUSING AND BUILDING - MUNICIPAL LAWS - HOUSING\n                        AND BUILDING PERMITS, SLUMS REHABILITATION,\n                        DEMOLITION, ENCROACHMENT/REMOVAL OF\n                        ENCROACHMENT, SEALING AND URBAN PLANNING\n2401 - 2410             INDIRECT TAXATION\n2501                    INSOLVENCY LAWS AND INSOLVENCY AND\n                        BANKRUPTCY CODE, 2016\n2701 - 2702             INTELLECTUAL PROPERTY RIGHTS LAW AND\n                        INFORMATION TECHNOLOGY\n2801 - 2804             JUDICIARY\n3001 - 3002             LAND ACQUISITION AND REQUISITION\n3101 - 3103             LAND LAWS, AGRICULTURAL TENANCY, LAND REVENUE\n3201                    LOTTERIES, BETTING, GAMBLING\n3301 - 3303             MINES MINERALS, MINING LEASES\n3401                    MOTOR VEHICLES LAWS- PERMITS, LICENSES AND\n                        OTHERS\n3501                    ORIGINAL SUITS IN SUPREME COURT / DISPUTES INTER-\n                        STATE WATER DISPUTES\n39                      REFERENCE UNDER ARTICLE 143 OF THE CONSTITUTION\n                        OF INDIA"
+    }, {
+        "page": 3,
+        "judge": "HON’BLE THE CHIEF JUSTICE OF INDIA",
+        "text": "40                     REFERENCE UNDER ARTICLE 317(1); FOR REMOVAL OF\n                       CHAIRPERSON/MEMBER OF TRIBUNAL/COMMISSION/\n                       AUTHORITY UNDER ANY CENTRAL LAW WHERE INQUIRY\n                       HAS TO BE CONDUCTED BY THE SUPREME COURT\n4201                   SEBI ACT AND SECURITIES LAWS INCLUDING FORWARD\n                       CONTRACT REGULATION ACT, 1952 AND SECURITIES\n                       CONTRACTS (REGULATION) ACT, 1956\n4307                   SERVICE LAWS - MATTERS RELATING TO APPOINTMENT\n                       OF LAW OFFICERS, PUBLIC PROSECUTORS, GOVERNMENT\n                       PLEADERS, ETC.\n4401                   STATE EXCISE - TRADING IN LIQUOR- PRIVILEGES,\n                       LICENSES DISTILLERIES/ BREWERIES\n4601 - 4602            TENDERS/LICENSES/ LEASES\n4701 - 4704            TRANSFER PETITIONS\n4801 - 4806            OTHERS\n1P to 48P              PIL RELATED TO ALL SUBJECT CATEGORIES"
+    }, {
+        "page": 4,
+        "judge": "HON’BLE MR. JUSTICE VIKRAM NATH",
+        "text": "                       HON’BLE MR. JUSTICE VIKRAM NATH\n302 - 306               ARBITRATION LAW AND OTHER ALTERNATIVE DISPUTE\n                        RESOLUTION\n401 - 402               ARMED FORCES AND PARAMILITARY FORCES\n501                     AVIATION LAWS / AIRPORTS\n601 - 603               BANKING\n701 - 703               BAR COUNCIL, BAR ASSOCIATIONS, ADVOCATES, OTHER\n                        PROFESSIONAL BODIES\n801                     BENAMI TRANSACTION ACT\n901 - 905               CIVIL LAW\n1001                    COMPANY LAW, SICK INDUSTRIES INCLUDING\n                        DISINVESTMENT\n1101 - 1103             COMPENSATION\n1201                    COMPETITION LAWS/ MRTP\n1301 - 1303             CONSUMER DISPUTES AND RERA\n1401 - 1402             CONTEMPT OF COURT\n1501 - 1512             CRIMINAL LAW EXCLUDING ACID ATTACK VICTIM(S)\n                        CASES\n1501D - 1511D           CAPITAL PUNISHMENT(D – CASES WHERE DEATH\n                        SENTENCE IS IMPOSED)\n1701 - 1707             EDUCATIONAL INSTITUTIONS – ADMISSION,\n                        MANAGEMENT, GRANT, RECOGNITION\n1802 - 1806             ELECTION AND DELIMITATION LAWS\n1901 - 1902             ENERGY LAWS-ELECTRICITY, PETROLEUM, OIL AND\n                        NATURAL GAS\n2001 - 2002             ENVIRONMENTAL LAWS\n2101 - 2106             FAMILY LAWS\n2201 - 2202             HABEAS CORPUS AND PREVENTIVE DETENTION\n2301 - 2302             HOUSING AND BUILDING - MUNICIPAL LAWS - HOUSING\n                        AND BUILDING PERMITS, SLUMS REHABILITATION,\n                        DEMOLITION, ENCROACHMENT/REMOVAL OF\n                        ENCROACHMENT, SEALING AND URBAN PLANNING\n2501                    INSOLVENCY LAWS AND INSOLVENCY AND\n                        BANKRUPTCY CODE, 2016\n2801 - 2804             JUDICIARY\n2901 - 2905             LABOUR AND INDUSTRIAL LAWS\n3201                    LOTTERIES, BETTING, GAMBLING\n3401                    MOTOR VEHICLES LAWS- PERMITS, LICENSES AND\n                        OTHERS\n3501                    ORIGINAL SUITS IN SUPREME COURT / DISPUTES INTER-\n                        STATE WATER DISPUTES\n3601                    PERSONS WITH DISABILITIES ACT, 2016 AND MENTAL\n                        HEALTH CARE ACT, 2017"
+    }, {
+        "page": 5,
+        "judge": "HON’BLE MR. JUSTICE VIKRAM NATH",
+        "text": "3801 - 3802            PUBLIC TRUST, RELIGIOUS ENDOWMENTS, WAQFS\n4101 - 4102            RENT CONTROL AND PUBLIC PREMISES (EVICTION) ACT\n4301 - 4308            SERVICE LAWS\n4401                   STATE EXCISE - TRADING IN LIQUOR- PRIVILEGES,\n                       LICENSES DISTILLERIES/ BREWERIES\n4601 - 4602            TENDERS/LICENSES/ LEASES\n4701 - 4704            TRANSFER PETITIONS\n4801 - 4805            OTHERS\n1P to 48P              PIL RELATED TO ALL SUBJECT CATEGORIES\n                       ANY OTHER MATTER SPECIALLY ASSIGNED"
+    }, {
+        "page": 6,
+        "judge": "HON’BLE MRS. JUSTICE B.V. NAGARATHNA",
+        "text": "                      HON’BLE MRS. JUSTICE B.V. NAGARATHNA\n302 - 306                  ARBITRATION LAW AND OTHER ALTERNATIVE DISPUTE\n                           RESOLUTION\n401 - 402                  ARMED FORCES AND PARAMILITARY FORCES\n601 - 603                  BANKING\n801                        BENAMI TRANSACTION ACT\n901 - 905                  CIVIL LAW\n1001                       COMPANY LAW, SICK INDUSTRIES INCLUDING\n                           DISINVESTMENT\n1201                       COMPETITION LAWS/ MRTP\n1301 - 1303                CONSUMER DISPUTES AND RERA\n1401 - 1402                CONTEMPT OF COURT\n1501 - 1508, 1510 - 1512   CRIMINAL LAW INCLUDING ACID ATTACK VICTIM(S)\n                           CASES\n1501D - 1511D              CAPITAL PUNISHMENT(D – CASES WHERE DEATH\n                           SENTENCE IS IMPOSED)\n1601 - 1606                DIRECT TAXATION\n1701 - 1707                EDUCATIONAL INSTITUTIONS – ADMISSION,\n                           MANAGEMENT, GRANT, RECOGNITION\n1802 - 1806                ELECTION AND DELIMITATION LAWS\n1901 - 1902                ENERGY LAWS-ELECTRICITY, PETROLEUM, OIL AND\n                           NATURAL GAS\n2001 - 2002                ENVIRONMENTAL LAWS\n2101 - 2106                FAMILY LAWS\n2201 - 2202                HABEAS CORPUS AND PREVENTIVE DETENTION\n2301 - 2302                HOUSING AND BUILDING - MUNICIPAL LAWS - HOUSING\n                           AND BUILDING PERMITS, SLUMS REHABILITATION,\n                           DEMOLITION, ENCROACHMENT/REMOVAL OF\n                           ENCROACHMENT, SEALING AND URBAN PLANNING\n2401 - 2410                INDIRECT TAXATION\n2501                       INSOLVENCY LAWS AND INSOLVENCY AND\n                           BANKRUPTCY CODE, 2016\n2601                       INSURANCE LAWS/ REGULATIONS\n2701 - 2702                INTELLECTUAL PROPERTY RIGHTS LAW AND\n                           INFORMATION TECHNOLOGY\n2801 - 2804                JUDICIARY\n3001 - 3002                LAND ACQUISITION AND REQUISITION\n3101 - 3103                LAND LAWS, AGRICULTURAL TENANCY, LAND REVENUE\n3301 - 3303                MINES MINERALS, MINING LEASES\n3501                       ORIGINAL SUITS IN SUPREME COURT / DISPUTES INTER-\n                           STATE WATER DISPUTES\n3601                       PERSONS WITH DISABILITIES ACT, 2016 AND MENTAL\n                           HEALTH CARE ACT, 2017"
+    }, {
+        "page": 7,
+        "judge": "HON’BLE MRS. JUSTICE B.V. NAGARATHNA",
+        "text": "3701                   PROPERTY TAX\n4201                   SEBI ACT AND SECURITIES LAWS INCLUDING FORWARD\n                       CONTRACT REGULATION ACT, 1952 AND SECURITIES\n                       CONTRACTS (REGULATION) ACT, 1956\n4301 - 4308            SERVICE LAWS\n4401                   STATE EXCISE - TRADING IN LIQUOR- PRIVILEGES,\n                       LICENSES DISTILLERIES/ BREWERIES\n4501                   TELEGRAPH & TELECOM LAWS\n4601 - 4602            TENDERS/LICENSES/ LEASES\n4701 - 4704            TRANSFER PETITIONS\n4801 - 4805            OTHERS\n1P to 48P              PIL RELATED TO ALL SUBJECT CATEGORIES\n                       ANY OTHER MATTER SPECIALLY ASSIGNED"
+    }, {
+        "page": 8,
+        "judge": "HON’BLE MR. JUSTICE M.M. SUNDRESH",
+        "text": "                       HON’BLE MR. JUSTICE M.M. SUNDRESH\n101                      ADMIRALTY, MARITIME LAWS, PORTS AND SHIPPING\n601 - 603                BANKING\n701 - 703                BAR COUNCIL, BAR ASSOCIATIONS, ADVOCATES, OTHER\n                         PROFESSIONAL BODIES\n901 - 905                CIVIL LAW\n1001                     COMPANY LAW, SICK INDUSTRIES INCLUDING\n                         DISINVESTMENT\n1201                     COMPETITION LAWS/ MRTP\n1301 - 1303              CONSUMER DISPUTES AND RERA\n1401 - 1402              CONTEMPT OF COURT\n1501 - 1512              CRIMINAL LAW INCLUDING ACID ATTACK VICTIM(S)\n                         CASES\n1501D - 1511D            CAPITAL PUNISHMENT(D – CASES WHERE DEATH\n                         SENTENCE IS IMPOSED)\n1601 - 1606              DIRECT TAXATION\n1701 - 1707              EDUCATIONAL INSTITUTIONS – ADMISSION,\n                         MANAGEMENT, GRANT, RECOGNITION\n1802 - 1806              ELECTION AND DELIMITATION LAWS\n1901 - 1902              ENERGY LAWS-ELECTRICITY, PETROLEUM, OIL AND\n                         NATURAL GAS\n2001 - 2002              ENVIRONMENTAL LAWS\n2101 - 2106              FAMILY LAWS\n2201 - 2202              HABEAS CORPUS AND PREVENTIVE DETENTION\n2301 - 2302              HOUSING AND BUILDING - MUNICIPAL LAWS - HOUSING\n                         AND BUILDING PERMITS, SLUMS REHABILITATION,\n                         DEMOLITION, ENCROACHMENT/REMOVAL OF\n                         ENCROACHMENT, SEALING AND URBAN PLANNING\n2501                     INSOLVENCY LAWS AND INSOLVENCY AND\n                         BANKRUPTCY CODE, 2016\n2801 - 2804              JUDICIARY\n3001 - 3002              LAND ACQUISITION AND REQUISITION\n3101 - 3103              LAND LAWS, AGRICULTURAL TENANCY, LAND REVENUE\n3601                     PERSONS WITH DISABILITIES ACT, 2016 AND MENTAL\n                         HEALTH CARE ACT, 2017\n3801 - 3802              PUBLIC TRUST, RELIGIOUS ENDOWMENTS, WAQFS\n4101 - 4102              RENT CONTROL AND PUBLIC PREMISES (EVICTION) ACT\n4201                     SEBI ACT AND SECURITIES LAWS INCLUDING FORWARD\n                         CONTRACT REGULATION ACT, 1952 AND SECURITIES\n                         CONTRACTS (REGULATION) ACT, 1956"
+    }, {
+        "page": 9,
+        "judge": "HON’BLE MR. JUSTICE M.M. SUNDRESH",
+        "text": "4301 - 4306, 4308      SERVICE LAWS\n4401                   STATE EXCISE - TRADING IN LIQUOR- PRIVILEGES,\n                       LICENSES DISTILLERIES/ BREWERIES\n4501                   TELEGRAPH & TELECOM LAWS\n4601 - 4602            TENDERS/LICENSES/ LEASES\n4703 - 4704            TRANSFER PETITIONS\n4801 - 4805            OTHERS\n1P to 48P              PIL RELATED TO ALL SUBJECT CATEGORIES\n                       ANY OTHER MATTER SPECIALLY ASSIGNED"
+    }, {
+        "page": 10,
+        "judge": "HON’BLE MR. JUSTICE PAMIDIGHANTAM SRI NARASIMHA",
+        "text": "              HON’BLE MR. JUSTICE PAMIDIGHANTAM SRI NARASIMHA\n302 - 306              ARBITRATION LAW AND OTHER ALTERNATIVE DISPUTE\n                       RESOLUTION\n501                    AVIATION LAWS / AIRPORTS\n601 - 603              BANKING\n701 - 703              BAR COUNCIL, BAR ASSOCIATIONS, ADVOCATES, OTHER\n                       PROFESSIONAL BODIES\n901 - 905              CIVIL LAW\n1001                   COMPANY LAW, SICK INDUSTRIES INCLUDING\n                       DISINVESTMENT\n1201                   COMPETITION LAWS/ MRTP\n1301 - 1303            CONSUMER DISPUTES AND RERA\n1401 - 1402            CONTEMPT OF COURT\n1601 - 1606            DIRECT TAXATION\n1701 - 1707            EDUCATIONAL INSTITUTIONS – ADMISSION,\n                       MANAGEMENT, GRANT, RECOGNITION\n1802 - 1806            ELECTION AND DELIMITATION LAWS\n1901 - 1902            ENERGY LAWS-ELECTRICITY, PETROLEUM, OIL AND\n                       NATURAL GAS\n2001 - 2002            ENVIRONMENTAL LAWS\n2101 - 2106            FAMILY LAWS\n2301 - 2302            HOUSING AND BUILDING - MUNICIPAL LAWS - HOUSING\n                       AND BUILDING PERMITS, SLUMS REHABILITATION,\n                       DEMOLITION, ENCROACHMENT/REMOVAL OF\n                       ENCROACHMENT, SEALING AND URBAN PLANNING\n2401 - 2410            INDIRECT TAXATION\n2501                   INSOLVENCY LAWS AND INSOLVENCY AND\n                       BANKRUPTCY CODE, 2016\n2701 - 2702            INTELLECTUAL PROPERTY RIGHTS LAW AND\n                       INFORMATION TECHNOLOGY\n2801 - 2804            JUDICIARY\n3001 - 3002            LAND ACQUISITION AND REQUISITION\n3301 - 3303            MINES MINERALS, MINING LEASES\n3501                   ORIGINAL SUITS IN SUPREME COURT / DISPUTES INTER-\n                       STATE WATER DISPUTES\n4201                   SEBI ACT AND SECURITIES LAWS INCLUDING FORWARD\n                       CONTRACT REGULATION ACT, 1952 AND SECURITIES\n                       CONTRACTS (REGULATION) ACT, 1956\n4301 - 4306, 4308      SERVICE LAWS\n4401                   STATE EXCISE - TRADING IN LIQUOR- PRIVILEGES,\n                       LICENSES DISTILLERIES/ BREWERIES\n4501                   TELEGRAPH & TELECOM LAWS"
+    }, {
+        "page": 11,
+        "judge": "HON’BLE MR. JUSTICE PAMIDIGHANTAM SRI NARASIMHA",
+        "text": "4601 - 4602           TENDERS/LICENSES/ LEASES\n4703 - 4704           TRANSFER PETITIONS\n4801 - 4805           OTHERS\n1P to 48P             PIL RELATED TO ALL SUBJECT CATEGORIES\n                      ANY OTHER MATTER SPECIALLY ASSIGNED"
+    }, {
+        "page": 12,
+        "judge": "HON’BLE MR. JUSTICE J.B. PARDIWALA",
+        "text": "                       HON’BLE MR. JUSTICE J.B. PARDIWALA\n302 - 306                ARBITRATION LAW AND OTHER ALTERNATIVE DISPUTE\n                         RESOLUTION\n601 - 603                BANKING\n801                      BENAMI TRANSACTION ACT\n901 - 905                CIVIL LAW\n1001                     COMPANY LAW, SICK INDUSTRIES INCLUDING\n                         DISINVESTMENT\n1201                     COMPETITION LAWS/ MRTP\n1301 - 1303              CONSUMER DISPUTES AND RERA\n1401 - 1402              CONTEMPT OF COURT\n1501 - 1512              CRIMINAL LAW INCLUDING ACID ATTACK VICTIM(S)\n                         CASES\n1501D - 1511D            CAPITAL PUNISHMENT(D – CASES WHERE DEATH\n                         SENTENCE IS IMPOSED)\n1601 - 1606              DIRECT TAXATION\n1802 - 1806              ELECTION AND DELIMITATION LAWS\n2301 - 2302              HOUSING AND BUILDING - MUNICIPAL LAWS - HOUSING\n                         AND BUILDING PERMITS, SLUMS REHABILITATION,\n                         DEMOLITION, ENCROACHMENT/REMOVAL OF\n                         ENCROACHMENT, SEALING AND URBAN PLANNING\n2401 - 2410              INDIRECT TAXATION\n2501                     INSOLVENCY LAWS AND INSOLVENCY AND\n                         BANKRUPTCY CODE, 2016\n2601                     INSURANCE LAWS/ REGULATIONS\n2701 - 2702              INTELLECTUAL PROPERTY RIGHTS LAW AND\n                         INFORMATION TECHNOLOGY\n3201                     LOTTERIES, BETTING, GAMBLING\n3601                     PERSONS WITH DISABILITIES ACT, 2016 AND MENTAL\n                         HEALTH CARE ACT, 2017\n3701                     PROPERTY TAX\n3801 - 3802              PUBLIC TRUST, RELIGIOUS ENDOWMENTS, WAQFS\n4201                     SEBI ACT AND SECURITIES LAWS INCLUDING FORWARD\n                         CONTRACT REGULATION ACT, 1952 AND SECURITIES\n                         CONTRACTS (REGULATION) ACT, 1956\n4401                     STATE EXCISE - TRADING IN LIQUOR- PRIVILEGES,\n                         LICENSES DISTILLERIES/ BREWERIES\n4501                     TELEGRAPH & TELECOM LAWS\n4601 - 4602              TENDERS/LICENSES/ LEASES\n4703 - 4704              TRANSFER PETITIONS"
+    }, {
+        "page": 13,
+        "judge": "HON’BLE MR. JUSTICE J.B. PARDIWALA",
+        "text": "4801 - 4804         OTHERS\n1P to 48P           PIL RELATED TO ALL SUBJECT CATEGORIES\n                    ANY OTHER MATTER SPECIALLY ASSIGNED"
+    }, {
+        "page": 14,
+        "judge": "HON’BLE MR. JUSTICE DIPANKAR DATTA",
+        "text": "                    HON’BLE MR. JUSTICE DIPANKAR DATTA\n101                   ADMIRALTY, MARITIME LAWS, PORTS AND SHIPPING\n302 - 306             ARBITRATION LAW AND OTHER ALTERNATIVE DISPUTE\n                      RESOLUTION\n401 - 402             ARMED FORCES AND PARAMILITARY FORCES\n501                   AVIATION LAWS / AIRPORTS\n601 - 603             BANKING\n701 - 703             BAR COUNCIL, BAR ASSOCIATIONS,\n                      ADVOCATES, OTHER PROFESSIONAL BODIES\n901 - 905             CIVIL LAW\n1001                  COMPANY LAW, SICK INDUSTRIES INCLUDING\n                      DISINVESTMENT\n1101 - 1103           COMPENSATION\n1201                  COMPETITION LAWS/ MRTP\n1301 - 1303           CONSUMER DISPUTES AND RERA\n1401 - 1402           CONTEMPT OF COURT\n1501 - 1512           CRIMINAL LAW INCLUDING ACID ATTACK VICTIM(S)\nEXCEPT 1501D TO 1511D CASES\n1601 - 1606           DIRECT TAXATION\n1701 - 1707           EDUCATIONAL INSTITUTIONS – ADMISSION,\n                      MANAGEMENT, GRANT, RECOGNITION\n1802 - 1806           ELECTION AND DELIMITATION LAWS\n2001 - 2002            ENVIRONMENTAL LAWS\n2101 - 2106            FAMILY LAWS\n2201 - 2202            HABEAS CORPUS AND PREVENTIVE DETENTION\n2401 - 2410            INDIRECT TAXATION\n2501                   INSOLVENCY LAWS AND INSOLVENCY AND\n                       BANKRUPTCY CODE, 2016\n2701 - 2702            INTELLECTUAL PROPERTY RIGHTS LAW AND\n                       INFORMATION TECHNOLOGY\n3001 - 3002            LAND ACQUISITION AND REQUISITION\n3101 - 3103            LAND LAWS, AGRICULTURAL TENANCY, LAND REVENUE\n3201                   LOTTERIES, BETTING, GAMBLING\n3301 - 3303            MINES MINERALS, MINING LEASES\n4201                   SEBI ACT AND SECURITIES LAWS INCLUDING FORWARD\n                       CONTRACT REGULATION ACT, 1952 AND SECURITIES\n                       CONTRACTS (REGULATION) ACT, 1956\n4301 - 4306, 4308      SERVICE LAWS\n4401                   STATE EXCISE - TRADING IN LIQUOR- PRIVILEGES,\n                       LICENSES DISTILLERIES/ BREWERIES\n4601 - 4602            TENDERS/LICENSES/ LEASES"
+    }, {
+        "page": 15,
+        "judge": "HON’BLE MR. JUSTICE DIPANKAR DATTA",
+        "text": "4703 - 4704         TRANSFER PETITIONS\n4801 - 4804         OTHERS\n1P to 48P           PIL RELATED TO ALL SUBJECT CATEGORIES\n                    ANY OTHER MATTER SPECIALLY ASSIGNED"
+    }, {
+        "page": 16,
+        "judge": "HON’BLE MR. JUSTICE SANJAY KUMAR",
+        "text": "                       HON’BLE MR. JUSTICE SANJAY KUMAR\n302 - 306                  ARBITRATION LAW AND OTHER ALTERNATIVE DISPUTE\n                           RESOLUTION\n601 - 603                  BANKING\n901 - 905                  CIVIL LAW\n1001                       COMPANY LAW, SICK INDUSTRIES INCLUDING\n                           DISINVESTMENT\n1201                       COMPETITION LAWS/ MRTP\n1301 - 1303                CONSUMER DISPUTES AND RERA\n1401 - 1402                CONTEMPT OF COURT\n1501 - 1508, 1510 - 1512   CRIMINAL LAW EXCLUDING ACID ATTACK VICTIM(S)\nEXCEPT 1501D TO 1511D      CASES\n1601 - 1606                DIRECT TAXATION\n1901 - 1902                ENERGY LAWS-ELECTRICITY, PETROLEUM, OIL AND\n                           NATURAL GAS\n2101 - 2106                FAMILY LAWS\n2301 - 2302                HOUSING AND BUILDING - MUNICIPAL LAWS - HOUSING\n                           AND BUILDING PERMITS, SLUMS REHABILITATION,\n                           DEMOLITION, ENCROACHMENT/REMOVAL OF\n                           ENCROACHMENT, SEALING AND URBAN PLANNING\n2401 - 2410                INDIRECT TAXATION\n2501                       INSOLVENCY LAWS AND INSOLVENCY AND\n                           BANKRUPTCY CODE, 2016\n3001 - 3002                LAND ACQUISITION AND REQUISITION\n3101 - 3103                LAND LAWS, AGRICULTURAL TENANCY, LAND REVENUE\n3601                       PERSONS WITH DISABILITIES ACT, 2016 AND MENTAL\n                           HEALTH CARE ACT, 2017\n4201                       SEBI ACT AND SECURITIES LAWS INCLUDING FORWARD\n                           CONTRACT REGULATION ACT, 1952 AND SECURITIES\n                           CONTRACTS (REGULATION) ACT, 1956\n4301 - 4306, 4308          SERVICE LAWS\n4501                       TELEGRAPH & TELECOM LAWS\n4703 - 4704                TRANSFER PETITIONS\n4801 - 4804                OTHERS\n                           ANY OTHER MATTER SPECIALLY ASSIGNED"
+    }, {
+        "page": 17,
+        "judge": "HON’BLE MR. JUSTICE AHSANUDDIN AMANULLAH",
+        "text": "                    HON’BLE MR. JUSTICE AHSANUDDIN AMANULLAH\n101                       ADMIRALTY, MARITIME LAWS, PORTS AND SHIPPING\n901 - 905                 CIVIL LAW\n1101 - 1103               COMPENSATION\n1501 - 1508, 1510 - 1512 CRIMINAL LAW EXCLUDING ACID ATTACK VICTIM(S)\nEXCEPT 1501D TO 1511D CASES\n2101 - 2106               FAMILY LAWS\n2601                      INSURANCE LAWS/ REGULATIONS\n2901 - 2905               LABOUR AND INDUSTRIAL LAWS\n3401                      MOTOR VEHICLES LAWS- PERMITS, LICENSES AND\n                          OTHERS\n3501                      ORIGINAL SUITS IN SUPREME COURT / DISPUTES INTER-\n                          STATE WATER DISPUTES\n3701                      PROPERTY TAX\n4101 - 4102               RENT CONTROL AND PUBLIC PREMISES (EVICTION) ACT\n4301 - 4306, 4308         SERVICE LAWS\n4703 - 4704               TRANSFER PETITIONS\n                          ANY OTHER MATTER SPECIALLY ASSIGNED"
+    }, {
+        "page": 18,
+        "judge": "HON’BLE MR. JUSTICE MANOJ MISRA",
+        "text": "                       HON’BLE MR. JUSTICE MANOJ MISRA\n401 - 402               ARMED FORCES AND PARAMILITARY FORCES\n601 - 603               BANKING\n901 - 905               CIVIL LAW\n1001                    COMPANY LAW, SICK INDUSTRIES INCLUDING\n                        DISINVESTMENT\n1101 - 1103             COMPENSATION\n1401 - 1402             CONTEMPT OF COURT\n1501 - 1508, 1510 - 1512 CRIMINAL LAW EXCLUDING ACID ATTACK VICTIM(S)\nEXCEPT 1501D TO 1511D CASES\n1601 - 1606             DIRECT TAXATION\n1802 - 1806             ELECTION AND DELIMITATION LAWS\n1901 - 1902             ENERGY LAWS-ELECTRICITY, PETROLEUM, OIL AND\n                        NATURAL GAS\n2401 - 2410             INDIRECT TAXATION\n2501                    INSOLVENCY LAWS AND INSOLVENCY AND BANKRUPTCY\n                        CODE, 2016\n2901 - 2905             LABOUR AND INDUSTRIAL LAWS\n3101 - 3103             LAND LAWS, AGRICULTURAL TENANCY, LAND REVENUE\n3401                    MOTOR VEHICLES LAWS- PERMITS, LICENSES AND\n                        OTHERS\n3601                    PERSONS WITH DISABILITIES ACT, 2016 AND MENTAL\n                        HEALTH CARE ACT, 2017\n3701                    PROPERTY TAX\n3801 - 3802             PUBLIC TRUST, RELIGIOUS ENDOWMENTS, WAQFS\n4101 - 4102             RENT CONTROL AND PUBLIC PREMISES (EVICTION) ACT\n4301 - 4306, 4308       SERVICE LAWS\n4501                    TELEGRAPH & TELECOM LAWS\n4703 - 4704             TRANSFER PETITIONS\n                        ANY OTHER MATTER SPECIALLY ASSIGNED"
+    }, {
+        "page": 19,
+        "judge": "HON’BLE MR. JUSTICE ARAVIND KUMAR",
+        "text": "                       HON’BLE MR. JUSTICE ARAVIND KUMAR\n302 - 306                ARBITRATION LAW AND OTHER ALTERNATIVE DISPUTE\n                         RESOLUTION\n401 - 402                ARMED FORCES AND PARAMILITARY FORCES\n601 - 603                BANKING\n901 - 905                CIVIL LAW\n1201                     COMPETITION LAWS/ MRTP\n1301 - 1303              CONSUMER DISPUTES AND RERA\n1401 - 1402              CONTEMPT OF COURT\n1501 - 1512           CRIMINAL LAW EXCLUDING ACID ATTACK VICTIM(S)\nEXCEPT 1501D TO 1511D CASES\n1601 - 1606           DIRECT TAXATION\n1701 - 1707              EDUCATIONAL INSTITUTIONS – ADMISSION,\n                         MANAGEMENT, GRANT, RECOGNITION\n1802 - 1806              ELECTION AND DELIMITATION LAWS\n1901 - 1902              ENERGY LAWS-ELECTRICITY, PETROLEUM, OIL AND\n                         NATURAL GAS\n2001 - 2002              ENVIRONMENTAL LAWS\n2201 - 2202              HABEAS CORPUS AND PREVENTIVE DETENTION\n2301 - 2302              HOUSING AND BUILDING - MUNICIPAL LAWS - HOUSING\n                         AND BUILDING PERMITS, SLUMS REHABILITATION,\n                         DEMOLITION, ENCROACHMENT/REMOVAL OF\n                         ENCROACHMENT, SEALING AND URBAN PLANNING\n2401 - 2410              INDIRECT TAXATION\n2501                     INSOLVENCY LAWS AND INSOLVENCY AND\n                         BANKRUPTCY CODE, 2016\n2901 - 2905              LABOUR AND INDUSTRIAL LAWS\n3201                     LOTTERIES, BETTING, GAMBLING\n3301 - 3303              MINES MINERALS, MINING LEASES\n3401                     MOTOR VEHICLES LAWS- PERMITS, LICENSES AND\n                         OTHERS\n3701                     PROPERTY TAX\n3801 - 3802              PUBLIC TRUST, RELIGIOUS ENDOWMENTS, WAQFS\n4201                     SEBI ACT AND SECURITIES LAWS INCLUDING FORWARD\n                         CONTRACT REGULATION ACT, 1952 AND SECURITIES\n                         CONTRACTS (REGULATION) ACT, 1956\n4301 - 4306, 4308        SERVICE LAWS\n4501                     TELEGRAPH & TELECOM LAWS"
+    }, {
+        "page": 20,
+        "judge": "HON’BLE MR. JUSTICE ARAVIND KUMAR",
+        "text": "4601 - 4602         TENDERS/LICENSES/ LEASES\n4703 - 4704         TRANSFER PETITIONS\n                    ANY OTHER MATTER SPECIALLY ASSIGNED"
+    }, {
+        "page": 21,
+        "judge": "HON’BLE MR. JUSTICE PRASHANT KUMAR MISHRA",
+        "text": "                HON’BLE MR. JUSTICE PRASHANT KUMAR MISHRA\n401 - 402              ARMED FORCES AND PARAMILITARY FORCES\n601 - 603              BANKING\n701 - 703              BAR COUNCIL, BAR ASSOCIATIONS, ADVOCATES, OTHER\n                       PROFESSIONAL BODIES\n901 - 905              CIVIL LAW\n1001                   COMPANY LAW, SICK INDUSTRIES INCLUDING\n                       DISINVESTMENT\n1101 - 1103            COMPENSATION\n1201                   COMPETITION LAWS/ MRTP\n1301 - 1303            CONSUMER DISPUTES AND RERA\n1401 - 1402            CONTEMPT OF COURT\n1501 - 1512           CRIMINAL LAW EXCLUDING ACID ATTACK VICTIM(S)\nEXCEPT 1501D TO 1511D CASES\n1601 - 1606            DIRECT TAXATION\n1701 - 1707            EDUCATIONAL INSTITUTIONS – ADMISSION,\n                       MANAGEMENT, GRANT, RECOGNITION\n1802 - 1806            ELECTION AND DELIMITATION LAWS\n1901 - 1902            ENERGY LAWS-ELECTRICITY, PETROLEUM, OIL AND\n                       NATURAL GAS\n2001 - 2002            ENVIRONMENTAL LAWS\n2201 - 2202            HABEAS CORPUS AND PREVENTIVE DETENTION\n2301 - 2302            HOUSING AND BUILDING - MUNICIPAL LAWS - HOUSING\n                       AND BUILDING PERMITS, SLUMS REHABILITATION,\n                       DEMOLITION, ENCROACHMENT/REMOVAL OF\n                       ENCROACHMENT, SEALING AND URBAN PLANNING\n2501                   INSOLVENCY LAWS AND INSOLVENCY AND BANKRUPTCY\n                       CODE, 2016\n2901 - 2905            LABOUR AND INDUSTRIAL LAWS\n3101 - 3103            LAND LAWS, AGRICULTURAL TENANCY, LAND REVENUE\n3201                   LOTTERIES, BETTING, GAMBLING\n3301 - 3303            MINES MINERALS, MINING LEASES\n3401                   MOTOR VEHICLES LAWS- PERMITS, LICENSES AND\n                       OTHERS\n3701                   PROPERTY TAX"
+    }, {
+        "page": 22,
+        "judge": "HON’BLE MR. JUSTICE PRASHANT KUMAR MISHRA",
+        "text": "3801 - 3802            PUBLIC TRUST, RELIGIOUS ENDOWMENTS, WAQFS\n4101 - 4102            RENT CONTROL AND PUBLIC PREMISES (EVICTION) ACT\n4201                   SEBI ACT AND SECURITIES LAWS INCLUDING FORWARD\n                       CONTRACT REGULATION ACT, 1952 AND SECURITIES\n                       CONTRACTS (REGULATION) ACT, 1956\n4301 - 4306, 4308      SERVICE LAWS\n4501                   TELEGRAPH & TELECOM LAWS\n4601 - 4602            TENDERS/LICENSES/ LEASES\n4703 - 4704            TRANSFER PETITIONS\n                       ANY OTHER MATTER SPECIALLY ASSIGNED"
+    }, {
+        "page": 23,
+        "judge": "HON’BLE MR. JUSTICE K.V. VISWANATHAN",
+        "text": "                    HON’BLE MR. JUSTICE K.V. VISWANATHAN\n101                   ADMIRALTY, MARITIME LAWS, PORTS AND SHIPPING\n302 - 306             ARBITRATION LAW AND OTHER ALTERNATIVE DISPUTE\n                      RESOLUTION\n501                   AVIATION LAWS / AIRPORTS\n601 - 603             BANKING\n701 - 703             BAR COUNCIL, BAR ASSOCIATIONS,\n                      ADVOCATES, OTHER PROFESSIONAL BODIES\n901 - 905             CIVIL LAW\n1001                  COMPANY LAW, SICK INDUSTRIES INCLUDING\n                      DISINVESTMENT\n1201                  COMPETITION LAWS/ MRTP\n1301 - 1303           CONSUMER DISPUTES AND RERA\n1501 - 1512           CRIMINAL LAW INCLUDING ACID ATTACK VICTIM(S)\nEXCEPT 1501D TO 1511D CASES\n1601 - 1606           DIRECT TAXATION\n1701 - 1707           EDUCATIONAL INSTITUTIONS – ADMISSION,\n                      MANAGEMENT, GRANT, RECOGNITION\n1802 - 1806           ELECTION AND DELIMITATION LAWS\n1901 - 1902            ENERGY LAWS-ELECTRICITY, PETROLEUM, OIL AND\n                       NATURAL GAS\n2101 - 2106            FAMILY LAWS\n2201 - 2202            HABEAS CORPUS AND PREVENTIVE DETENTION\n2301 - 2302            HOUSING AND BUILDING - MUNICIPAL LAWS - HOUSING\n                       AND BUILDING PERMITS, SLUMS REHABILITATION,\n                       DEMOLITION, ENCROACHMENT/REMOVAL OF\n                       ENCROACHMENT, SEALING AND URBAN PLANNING\n2401 - 2410            INDIRECT TAXATION\n2501                   INSOLVENCY LAWS AND INSOLVENCY AND\n                       BANKRUPTCY CODE, 2016\n2701 - 2702            INTELLECTUAL PROPERTY RIGHTS LAW AND\n                       INFORMATION TECHNOLOGY\n2901 - 2905            LABOUR AND INDUSTRIAL LAWS\n3001 - 3002            LAND ACQUISITION AND REQUISITION\n3301 - 3303            MINES MINERALS, MINING LEASES\n4201                   SEBI ACT AND SECURITIES LAWS INCLUDING FORWARD\n                       CONTRACT REGULATION ACT, 1952 AND SECURITIES\n                       CONTRACTS (REGULATION) ACT, 1956\n4301 - 4306, 4308      SERVICE LAWS\n4401                   STATE EXCISE - TRADING IN LIQUOR- PRIVILEGES,\n                       LICENSES DISTILLERIES/ BREWERIES"
+    }, {
+        "page": 24,
+        "judge": "HON’BLE MR. JUSTICE K.V. VISWANATHAN",
+        "text": "4501                TELEGRAPH & TELECOM LAWS\n4601 - 4602         TENDERS/LICENSES/ LEASES\n4703 - 4704         TRANSFER PETITIONS\n                    ANY OTHER MATTER SPECIALLY ASSIGNED"
+    }, {
+        "page": 25,
+        "judge": "HON’BLE MR. JUSTICE UJJAL BHUYAN",
+        "text": "                       HON’BLE MR. JUSTICE UJJAL BHUYAN\n901 - 905                  CIVIL LAW\n1101 - 1103                COMPENSATION\n1301 - 1303                CONSUMER DISPUTES AND RERA\n1501 – 1508, 1510 - 1512   CRIMINAL LAW EXCLUDING ACID ATTACK VICTIM(S)\nEXCEPT 1501D TO 1511D      CASES\n1601 - 1606                DIRECT TAXATION\n2401 - 2410                INDIRECT TAXATION\n2901 - 2905                LABOUR AND INDUSTRIAL LAWS\n3001 - 3002                LAND ACQUISITION AND REQUISITION\n3101 - 3103                LAND LAWS, AGRICULTURAL TENANCY, LAND REVENUE\n3401                       MOTOR VEHICLES LAWS- PERMITS, LICENSES AND\n                           OTHERS\n3601                       PERSONS WITH DISABILITIES ACT, 2016 AND MENTAL\n                           HEALTH CARE ACT, 2017\n4101 - 4102                RENT CONTROL AND PUBLIC PREMISES (EVICTION) ACT\n4703 - 4704                TRANSFER PETITIONS\n                           ANY OTHER MATTER SPECIALLY ASSIGNED"
+    }, {
+        "page": 26,
+        "judge": "HON’BLE MR. JUSTICE SARASA VENKATANARAYANA BHATTI",
+        "text": "              HON’BLE MR. JUSTICE SARASA VENKATANARAYANA BHATTI\n601 - 603               BANKING\n901 - 905               CIVIL LAW\n1101 - 1103             COMPENSATION\n1701 - 1707             EDUCATIONAL INSTITUTIONS – ADMISSION,\n                        MANAGEMENT, GRANT, RECOGNITION\n1901 - 1902             ENERGY LAWS-ELECTRICITY, PETROLEUM, OIL AND\n                        NATURAL GAS\n2101 - 2106             FAMILY LAWS\n2301 - 2302             HOUSING AND BUILDING - MUNICIPAL LAWS - HOUSING\n                        AND BUILDING PERMITS, SLUMS REHABILITATION,\n                        DEMOLITION, ENCROACHMENT/REMOVAL OF\n                        ENCROACHMENT, SEALING AND URBAN PLANNING\n2501                    INSOLVENCY LAWS AND INSOLVENCY AND BANKRUPTCY\n                        CODE, 2016\n2601                    INSURANCE LAWS/ REGULATIONS\n2901 - 2905             LABOUR AND INDUSTRIAL LAWS\n3001 - 3002             LAND ACQUISITION AND REQUISITION\n3101 - 3103             LAND LAWS, AGRICULTURAL TENANCY, LAND REVENUE\n3401                    MOTOR VEHICLES LAWS- PERMITS, LICENSES AND\n                        OTHERS\n3601                    PERSONS WITH DISABILITIES ACT, 2016 AND MENTAL\n                        HEALTH CARE ACT, 2017\n3801 - 3802             PUBLIC TRUST, RELIGIOUS ENDOWMENTS, WAQFS\n4101 - 4102             RENT CONTROL AND PUBLIC PREMISES (EVICTION) ACT\n4201                    SEBI ACT AND SECURITIES LAWS INCLUDING FORWARD\n                        CONTRACT REGULATION ACT, 1952 AND SECURITIES\n                        CONTRACTS (REGULATION) ACT, 1956\n4401                    STATE EXCISE - TRADING IN LIQUOR- PRIVILEGES,\n                        LICENSES DISTILLERIES/ BREWERIES\n4501                    TELEGRAPH & TELECOM LAWS\n4703 - 4704             TRANSFER PETITIONS\n                        ANY OTHER MATTER SPECIALLY ASSIGNED"
+    }, {
+        "page": 27,
+        "judge": "HON’BLE MR. JUSTICE SATISH CHANDRA SHARMA",
+        "text": "              HON’BLE MR. JUSTICE SATISH CHANDRA SHARMA\n401 - 402            ARMED FORCES AND PARAMILITARY FORCES\n901 - 905            CIVIL LAW\n1101 - 1103          COMPENSATION\n1501 – 1508, 1510 - 1512 CRIMINAL LAW EXCLUDING ACID ATTACK VICTIM(S)\nEXCEPT 1501D TO 1511D CASES\n2301 - 2302          HOUSING AND BUILDING - MUNICIPAL LAWS - HOUSING\n                     AND BUILDING PERMITS, SLUMS REHABILITATION,\n                     DEMOLITION, ENCROACHMENT/REMOVAL OF\n                     ENCROACHMENT, SEALING AND URBAN PLANNING\n2901 - 2905          LABOUR AND INDUSTRIAL LAWS\n3401                 MOTOR VEHICLES LAWS- PERMITS, LICENSES AND\n                     OTHERS\n3601                 PERSONS WITH DISABILITIES ACT, 2016 AND MENTAL\n                     HEALTH CARE ACT, 2017\n3801 - 3802          PUBLIC TRUST, RELIGIOUS ENDOWMENTS, WAQFS\n4101 - 4102          RENT CONTROL AND PUBLIC PREMISES (EVICTION) ACT\n4703 - 4704          TRANSFER PETITIONS\n                     ANY OTHER MATTER SPECIALLY ASSIGNED"
+    }, {
+        "page": 28,
+        "judge": "HON’BLE MR. JUSTICE AUGUSTINE GEORGE MASIH",
+        "text": "                HON’BLE MR. JUSTICE AUGUSTINE GEORGE MASIH\n601 - 603              BANKING\n901 - 905              CIVIL LAW\n1101 - 1103            COMPENSATION\n1301 - 1303            CONSUMER DISPUTES AND RERA\n1501 - 1512            CRIMINAL LAW EXCLUDING ACID ATTACK VICTIM(S)\n                       CASES\n1501D - 1511D          CAPITAL PUNISHMENT(D – CASES WHERE DEATH\n                       SENTENCE IS IMPOSED)\n1701 - 1707            EDUCATIONAL INSTITUTIONS – ADMISSION,\n                       MANAGEMENT, GRANT, RECOGNITION\n1901 - 1902            ENERGY LAWS-ELECTRICITY, PETROLEUM, OIL AND\n                       NATURAL GAS\n2101 - 2106            FAMILY LAWS\n2901 - 2905            LABOUR AND INDUSTRIAL LAWS\n3401                   MOTOR VEHICLES LAWS- PERMITS, LICENSES AND\n                       OTHERS\n4101 - 4102            RENT CONTROL AND PUBLIC PREMISES (EVICTION) ACT\n4301 - 4306, 4308      SERVICE LAWS\n4703 - 4704            TRANSFER PETITIONS\n                       ANY OTHER MATTER SPECIALLY ASSIGNED"
+    }, {
+        "page": 29,
+        "judge": "HON’BLE MR. JUSTICE SANDEEP MEHTA",
+        "text": "                       HON’BLE MR. JUSTICE SANDEEP MEHTA\n901 - 905                  CIVIL LAW\n1301 - 1303                CONSUMER DISPUTES AND RERA\n1501 - 1508, 1510 - 1512   CRIMINAL LAW INCLUDING ACID ATTACK VICTIM(S)\n                           CASES\n1501D - 1511D              CAPITAL PUNISHMENT(D – CASES WHERE DEATH\n                           SENTENCE IS IMPOSED)\n2901 - 2905                LABOUR AND INDUSTRIAL LAWS\n3401                       MOTOR VEHICLES LAWS- PERMITS, LICENSES AND\n                           OTHERS\n4101 - 4102                RENT CONTROL AND PUBLIC PREMISES (EVICTION) ACT\n4301 - 4306, 4308          SERVICE LAWS\n4703 - 4704                TRANSFER PETITIONS\n                           ANY OTHER MATTER SPECIALLY ASSIGNED"
+    }, {
+        "page": 30,
+        "judge": "SPECIAL ROSTER NOTES",
+        "text": "Note\n   1. Three 3-Judges Benches, headed by Hon’ble the Chief Justice of India, Hon’ble Mr. Justice\n      Vikram Nath and Hon’ble Mrs. Justice B.V. Nagarathna, shall mainly deal with 3 Judges\n      matters on Non-Miscellaneous days, i.e., Tuesday, Wednesday, and Thursday.\n   2. One Division Bench, headed by Hon'ble Mr. Justice Dipankar Datta, shall deal with the oldest\n      Regular hearing Service Matters on Non-Miscellaneous days, i.e., Tuesday, Wednesday and\n      Thursday.\n   3. Two Division Benches, headed respectively by Hon’ble Mr. Justice P.K. Mishra and\n      Hon’ble Mr. Justice S.V.N. Bhatti, shall exclusively deal with the oldest Civil Matters on\n      Non-Miscellaneous days, i.e., Tuesday, Wednesday, and Thursday.\n   4. Two Division Benches, headed respectively by Hon’ble Mr. Justice Manoj Misra and\n      Hon’ble Mr. Justice Ujjal Bhuyan, shall exclusively deal with the oldest Criminal Matters\n      on Non-Miscellaneous days, i.e., Tuesday, Wednesday, and Thursday."
+    }];
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[c]));
+    const names = [...new Set(ROSTER.filter(x => x.judge !== 'SPECIAL ROSTER NOTES').map(x => x.judge))];
+    const sel = document.getElementById('judgeSelect');
+    names.forEach(n => {
+        let o = document.createElement('option');
+        o.value = n;
+        o.textContent = n;
+        sel.appendChild(o)
+    });
+    const notes = ROSTER.find(x => x.page === 30);
+    document.getElementById('specialNotes').innerHTML = notes ? '<pre style="white-space:pre-wrap">' + esc(notes.text) + '</pre>' : '';
+    function renderRoster() {
+        const q = document.getElementById('rosterSearch').value.trim().toLowerCase(),
+            judge = sel.value;
+        const groups = new Map();
+        for (const x of ROSTER) {
+            if (x.page === 30)
+                continue;
+            if (judge && x.judge !== judge)
+                continue;
+            if (q && !((x.text + ' ' + x.judge).toLowerCase().includes(q)))
+                continue;
+            if (!groups.has(x.judge))
+                groups.set(x.judge, []);
+            groups.get(x.judge).push(x)
+        }
+        const root = document.getElementById('rosterResults');
+        root.innerHTML = '';
+        document.getElementById('rosterCount').textContent = groups.size + ' judge/roster entries matching; ' + [...groups.values()].reduce((n, x) => n + x.length, 0) + ' PDF pages. Search matches page text, not a legal determination.';
+        if (!groups.size) {
+            root.textContent = 'No matching entries found. Try a broader subject or code.';
+            return
+        }
+        for (const [name, items] of groups) {
+            const d = document.createElement('details');
+            d.className = 'judge';
+            d.open = groups.size <= 3;
+            const s = document.createElement('summary');
+            s.textContent = name + ' · ' + items.map(x => 'p. ' + x.page).join(', ');
+            d.appendChild(s);
+            const body = document.createElement('div');
+            body.className = 'body';
+            for (const x of items) {
+                const p = document.createElement('div');
+                p.className = 'page';
+                const lab = document.createElement('strong');
+                lab.textContent = 'Source PDF page ' + x.page;
+                const pre = document.createElement('pre');
+                pre.textContent = x.text;
+                p.append(lab, pre);
+                body.appendChild(p)
+            }
+            d.appendChild(body);
+            root.appendChild(d)
+        }
+    }
+    document.getElementById('rosterSearch').addEventListener('input', renderRoster);
+    sel.addEventListener('change', renderRoster);
+    renderRoster();
+    const refs = [{
+        name: 'Synthetic Petition A — Demolition notice',
+        text: 'Petition challenging a municipal demolition notice requesting interim protection against demolition and dispossession.'
+    }, {
+        name: 'Synthetic Petition B — Preventive detention',
+        text: 'Habeas corpus petition challenging preventive detention and seeking immediate release on grounds of personal liberty.'
+    }, {
+        name: 'Synthetic Petition C — Government notification',
+        text: 'Constitutional petition challenging a central government notification under Article 14 on grounds of unequal treatment.'
+    }];
+    const words = s => new Set((s.toLowerCase().match(/[a-z]{4,}/g) || []).filter(x => !['that', 'with', 'from', 'this', 'have', 'which', 'their', 'petition', 'court', 'under', 'page'].includes(x)));
+    function similarity(a, b) {
+        const A = words(a),
+            B = words(b),
+            common = [...A].filter(x => B.has(x)),
+            union = new Set([...A, ...B]);
+        return {
+            score: union.size ? Math.round(common.length / union.size * 100) : 0,
+            common
+        }
+    }
+    function analyse() {
+        const t = document.getElementById('petition').value.trim();
+        if (t.length < 30) {
+            alert('Enter at least 30 characters.');
+            return
+        }
+        const rules = [[/habeas corpus|preventive detention|death penalty|capital punishment/i, 'Detention/capital-punishment topic mentioned'], [/\bbail\b|anticipatory bail/i, 'Bail-related terminology detected (context unverified)'], [/demolition|eviction|dispossession/i, 'Demolition/eviction/dispossession terminology'], [/interim relief|interim order|interim protection|stay order/i, 'Interim relief terminology detected'], [/urgent|immediate|emergency/i, 'Urgency language detected — not eligibility'], [/registry defects|filing defects|defects have not|defects not cured/i, 'Possible filing-defect issue (verify status)']];
+        const flags = rules.filter(([r]) => r.test(t)).map(([, label]) => label);
+        const codes = [];
+        if (/demolition/i.test(t))
+            codes.push('2301–2302: Housing/building/municipal law');
+        if (/habeas corpus|preventive detention/i.test(t))
+            codes.push('2201–2202: Habeas corpus/preventive detention');
+        if (/\bbail\b|criminal/i.test(t))
+            codes.push('Criminal-law roster entries: verify specific category and exceptions');
+        document.getElementById('assessment').innerHTML = '<div class="result"><h3>Text indicators (not legal findings)</h3>' + (flags.length ? flags.map(x => '<span class="tag">' + esc(x) + '</span>').join('') : 'No predefined indicators found.') + '<h3 style="margin-top:15px">Possible subject groups</h3>' + (codes.length ? codes.map(x => '<p>' + esc(x) + '</p>').join('') : 'Not identified from text.') + '<div class="warning"><strong>Human review required.</strong> The document may quote unrelated proceedings or contain extraction errors. No urgency qualification, formal connection, or bench allocation has been determined.</div></div>';
+        const ranked = refs.map(x => ({
+            ...x,
+            ...similarity(t, x.text)
+        })).sort((a, b) => b.score - a.score);
+        document.getElementById('matches').innerHTML = ranked.map(x => '<div class="result"><strong>' + esc(x.name) + '</strong><p>Lexical overlap: ' + x.score + '%</p><small>Shared terms: ' + esc(x.common.join(', ') || 'none') + '</small><p class="muted">Not evidence of formal judicial connectedness.</p></div>').join('')
+    }
+    document.getElementById('analyseBtn').addEventListener('click', analyse);
+    document.getElementById('sampleBtn').addEventListener('click', () => {
+        document.getElementById('petition').value = 'The petitioner challenges a municipal demolition notice and seeks urgent interim protection against demolition and dispossession. The petition invokes Article 14. Registry defects have not yet been cured.';
+        analyse()
+    });
+    document.getElementById('pdfUpload').addEventListener('change', async function() {
+        const f = this.files[0],
+            status = document.getElementById('uploadStatus');
+        if (!f)
+            return;
+        document.getElementById('petition').value = '';
+        document.getElementById('assessment').textContent = 'No analysis yet.';
+        document.getElementById('matches').textContent = 'Run an analysis to see possible overlaps.';
+        if (!f.name.toLowerCase().endsWith('.pdf') || f.size > 10 * 1024 * 1024) {
+            status.textContent = 'Select a PDF smaller than 10 MB.';
+            return
+        }
+        status.textContent = 'Extracting PDF text...';
+        try {
+            if (typeof pdfjsLib === 'undefined')
+                throw Error('PDF.js could not load');
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            const pdf = await pdfjsLib.getDocument({
+                data: new Uint8Array(await f.arrayBuffer())
+            }).promise;
+            if (pdf.numPages > 100)
+                throw Error('Maximum 100 pages');
+            let text = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const pg = await pdf.getPage(i),
+                    c = await pg.getTextContent();
+                text += '\n--- Page ' + i + ' ---\n' + c.items.map(x => x.str).join(' ') + '\n'
+            }
+            if (text.trim().length < 30)
+                throw Error('No readable text; scanned PDF may need OCR');
+            document.getElementById('petition').value = text.trim();
+            status.textContent = 'Extracted ' + pdf.numPages + ' pages. Review for garbled text before analysing. The analysis is not reliable on malformed extraction.'
+        } catch (e) {
+            status.textContent = 'PDF error: ' + e.message
+        }
+    });
+    </script>
+</body>
+</html>
 
