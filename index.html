@@ -1,0 +1,132 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>J-TRAC | Judicial Triage & Related Cases</title>
+<style>
+:root{font-family:Arial,sans-serif;color:#17233b;background:#f3f6fb}
+*{box-sizing:border-box}
+body{margin:0}
+header{background:#102747;color:white;padding:22px 6%}
+header h1{margin:0;font-size:27px}
+header p{margin:7px 0 0;color:#cbd8e8}
+main{max-width:1100px;margin:28px auto;padding:0 18px}
+.card{background:white;border:1px solid #dce4ee;border-radius:13px;padding:22px;margin-bottom:20px;box-shadow:0 3px 12px #15284409}
+h2{font-size:19px;margin-top:0}
+small,.muted{color:#637187}
+textarea,input{width:100%;padding:12px;border:1px solid #cad4e1;border-radius:8px;font:inherit}
+textarea{min-height:180px;resize:vertical}
+button{background:#174d87;color:white;border:0;border-radius:8px;padding:12px 18px;cursor:pointer;font-weight:bold}
+button:hover{background:#103b6b}
+button:disabled{opacity:.5}
+.badge{display:inline-block;padding:6px 10px;background:#edf3fa;border-radius:6px;margin:4px 4px 4px 0;font-size:13px}
+.warning{border-left:4px solid #cf8c2b;padding:12px;background:#fff8e9}
+.result{padding:14px;border:1px solid #dce4ee;border-radius:9px;margin-top:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+footer{text-align:center;color:#64748b;padding:24px;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+<h1>⚖ J-TRAC</h1>
+<p>Judicial Triage, Roster and Associated Cases · Research Prototype v0.1</p>
+</header>
+<main>
+<div class="card warning">
+<strong>Research demonstration only.</strong>
+This tool identifies preliminary textual indicators for human review.
+It does not determine legal urgency, formally connect cases, assign benches
+or issue judicial directions. Do not enter confidential case information.
+</div>
+
+<div class="grid">
+<section class="card">
+<h2>1. Submit a petition</h2>
+<p class="muted">Paste a synthetic or publicly available petition excerpt.</p>
+<label for="petition">Petition text</label>
+<textarea id="petition" placeholder="Enter petition facts, prayers and procedural details..."></textarea>
+<p><button onclick="analyse()">Analyse petition</button>
+<button onclick="loadSample()" style="background:#64748b">Load example</button></p>
+</section>
+<section class="card">
+<h2>2. Preliminary assessment</h2>
+<div id="results" class="muted">Your analysis will appear here.</div>
+</section>
+</div>
+
+<section class="card">
+<h2>3. Potentially related matters</h2>
+<p class="muted">Compare the submitted text with a small synthetic reference set.</p>
+<div id="matches">Run an analysis to view possible similarities.</div>
+</section>
+
+<section class="card">
+<h2>4. Human review checklist</h2>
+<p><label><input type="checkbox" style="width:auto"> Registry defects verified or cured</label></p>
+<p><label><input type="checkbox" style="width:auto"> Interim relief and applicable listing procedure reviewed</label></p>
+<p><label><input type="checkbox" style="width:auto"> Potential related matters independently checked</label></p>
+<p><label><input type="checkbox" style="width:auto"> Current roster and circulars verified</label></p>
+<p class="muted">Checking these boxes records no formal approval or judicial determination.</p>
+</section>
+</main>
+<footer>J-TRAC · Educational public policy prototype · No judicial affiliation</footer>
+<script>
+const references=[
+ {name:"Synthetic Petition A — Demolition notice",text:"Petition challenging a municipal demolition notice, requesting interim protection against demolition and dispossession."},
+ {name:"Synthetic Petition B — Preventive detention",text:"Habeas corpus petition challenging preventive detention and seeking immediate release on grounds of personal liberty."},
+ {name:"Synthetic Petition C — Government notification",text:"Constitutional petition challenging a central government notification under Article 14 on grounds of unequal treatment."}
+];
+function escapeHTML(s){
+ return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function tokens(s){
+ return new Set((s.toLowerCase().match(/[a-z]{4,}/g)||[])
+ .filter(x=>!["that","with","from","this","have","which","their","petition","court","under"].includes(x)));
+}
+function similarity(a,b){
+ const A=tokens(a),B=tokens(b);
+ const common=[...A].filter(x=>B.has(x));
+ const total=new Set([...A,...B]).size;
+ return {score:total?Math.round(common.length/total*100):0,common};
+}
+function analyse(){
+ const t=document.getElementById("petition").value.trim();
+ if(t.length<30){alert("Please enter at least 30 characters.");return}
+ const lower=t.toLowerCase();
+ const flags=[];
+ const rules=[
+  [/habeas corpus|preventive detention|death penalty|capital punishment/,"Potentially relevant special listing category"],
+  [/bail|anticipatory bail/,"Bail-related procedural review may be relevant"],
+  [/demolition|eviction|dispossession/,"Demolition, eviction or dispossession indicator"],
+  [/interim relief|interim order|interim protection|stay order/,"Possible interim-relief request"],
+  [/urgent|immediate|emergency/,"Urgency language detected — not proof of eligibility"],
+  [/defect|deficiency|not cured/,"Possible filing-defect issue requiring verification"]
+ ];
+ rules.forEach(([re,label])=>{if(re.test(lower))flags.push(label)});
+ const categories=[];
+ if(/demolition/.test(lower))categories.push("2301–2302: Demolition (verify exact code)");
+ if(/habeas corpus|preventive detention/.test(lower))categories.push("2201–2202: Detention-related (verify exact code)");
+ if(/bail|criminal/.test(lower))categories.push("Criminal categories: verify applicable roster code");
+ const out=document.getElementById("results");
+ out.innerHTML="<div class='result'><strong>Indicators identified</strong><p>"+
+ (flags.length?flags.map(x=>"<span class='badge'>"+escapeHTML(x)+"</span>").join(""):"No predefined indicators detected.")+
+ "</p><strong>Potential roster categories</strong><p>"+
+ (categories.length?categories.map(escapeHTML).join("<br>"):"Not determined from this text.")+
+ "</p><div class='warning'><strong>Disposition: Human review required.</strong><br>No urgency eligibility or bench assignment has been determined.</div></div>";
+ const ranked=references.map(r=>({...r,...similarity(t,r.text)})).sort((a,b)=>b.score-a.score);
+ document.getElementById("matches").innerHTML=ranked.map(r=>
+ "<div class='result'><strong>"+escapeHTML(r.name)+"</strong><p>Lexical overlap score: "+r.score+"%"+
+ "</p><small>Shared terms: "+(r.common.length?escapeHTML(r.common.join(", ")):"None")+
+ "</small><p class='muted'>A textual match does not establish formal judicial connectedness.</p></div>").join("");
+}
+function loadSample(){
+ document.getElementById("petition").value=
+ "The petitioner challenges a municipal demolition notice and seeks urgent interim protection against demolition and dispossession. The petition invokes Article 14. Registry defects have not yet been cured.";
+ analyse();
+}
+</script>
+</body>
+</html>
